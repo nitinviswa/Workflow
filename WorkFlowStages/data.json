@@ -1,0 +1,269 @@
+{
+  "initialNodes": [
+    {
+      "id": "1",
+      "type": "input",
+      "data": {
+        "label": "Loan Application Received"
+      },
+      "sourcePosition": "right",
+      "targetPosition": "left",
+      "position": {
+        "x": 0,
+        "y": 250
+      }
+    },
+    {
+      "id": "2",
+      "data": {
+        "label": "Initial Review"
+      },
+      "position": {
+        "x": 150,
+        "y": 250
+      },
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "3",
+      "data": {
+        "label": "Credit Check"
+      },
+      "position": {
+        "x": 300,
+        "y": 100
+      },
+      "sourcePosition": "right",
+      "targetPosition": "left"
+    },
+    {
+      "id": "4",
+      "sourcePosition": "right",
+      "targetPosition": "left",
+      "data": {
+        "label": "Employment Verification"
+      },
+      "position": {
+        "x": 300,
+        "y": 250
+      }
+    },
+    {
+      "id": "5",
+      "sourcePosition": "right",
+      "targetPosition": "left",
+      "data": {
+        "label": "Approval by Officer"
+      },
+      "position": {
+        "x": 300,
+        "y": 400
+      }
+    },
+    {
+      "id": "6",
+      "sourcePosition": "right",
+      "targetPosition": "left",
+      "data": {
+        "label": "Credit Check Passed?"
+      },
+      "position": {
+        "x": 450,
+        "y": 100
+      }
+    },
+    {
+      "id": "7",
+      "sourcePosition": "right",
+      "targetPosition": "left",
+      "data": {
+        "label": "Employment Verification Passed?"
+      },
+      "position": {
+        "x": 450,
+        "y": 250
+      }
+    },
+    {
+      "id": "8",
+      "sourcePosition": "right",
+      "targetPosition": "left",
+      "data": {
+        "label": "Officer Approval Granted?"
+      },
+      "position": {
+        "x": 450,
+        "y": 400
+      }
+    },
+    {
+      "id": "9",
+      "sourcePosition": "right",
+      "targetPosition": "left",
+      "data": {
+        "label": "Final Approval by Manager"
+      },
+      "position": {
+        "x": 600,
+        "y": 250
+      }
+    },
+    {
+      "id": "10",
+      "type": "output",
+      "sourcePosition": "right",
+      "targetPosition": "left",
+      "data": {
+        "label": "Loan Approved"
+      },
+      "position": {
+        "x": 750,
+        "y": 250
+      }
+    },
+    {
+      "id": "11",
+      "type": "output",
+      "sourcePosition": "right",
+      "targetPosition": "left",
+      "data": {
+        "label": "Loan Rejected"
+      },
+      "position": {
+        "x": 600,
+        "y": 450
+      }
+    }
+  ],
+  "initialEdges": [
+    {
+      "id": "e1-2",
+      "source": "1",
+      "target": "2",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "type": "default",
+      "animated": true
+    },
+    {
+      "id": "e2-3",
+      "source": "2",
+      "target": "3",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "type": "default"
+    },
+    {
+      "id": "e2-4",
+      "source": "2",
+      "target": "4",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "type": "default"
+    },
+    {
+      "id": "e2-5",
+      "source": "2",
+      "target": "5",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "type": "default"
+    },
+    {
+      "id": "e3-6",
+      "source": "3",
+      "target": "6",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "type": "default"
+    },
+    {
+      "id": "e4-7",
+      "source": "4",
+      "target": "7",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "type": "default"
+    },
+    {
+      "id": "e5-8",
+      "source": "5",
+      "target": "8",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "type": "default"
+    },
+    {
+      "id": "e6-9",
+      "source": "6",
+      "target": "9",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "type": "default",
+      "label": "Yes"
+    },
+    {
+      "id": "e6-11",
+      "source": "6",
+      "target": "11",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "type": "default",
+      "label": "No"
+    },
+    {
+      "id": "e7-9",
+      "source": "7",
+      "target": "9",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "type": "default",
+      "label": "Yes"
+    },
+    {
+      "id": "e7-11",
+      "source": "7",
+      "target": "11",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "type": "default",
+      "label": "No"
+    },
+    {
+      "id": "e8-9",
+      "source": "8",
+      "target": "9",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "type": "default",
+      "label": "Yes"
+    },
+    {
+      "id": "e8-11",
+      "source": "8",
+      "target": "11",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "type": "default",
+      "label": "No"
+    },
+    {
+      "id": "e9-10",
+      "source": "9",
+      "target": "10",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "type": "default"
+    },
+    {
+      "id": "e11-2",
+      "source": "11",
+      "target": "2",
+      "sourceHandle": "right",
+      "targetHandle": "left",
+      "type": "default",
+      "label": "Retry"
+    }
+  ]
+}
