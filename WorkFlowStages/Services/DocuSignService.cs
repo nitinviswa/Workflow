@@ -3,71 +3,178 @@ using DocuSign.eSign.Client;
 using DocuSign.eSign.Client.Auth;
 using DocuSign.eSign.Model;
 using Microsoft.Extensions.Configuration;
+using PdfSharp.Pdf;
+using PdfSharp.Pdf.IO;
+using PdfSharp.Drawing;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using WorkFlowStages.Dto;
+using WorkFlowStages.Model;
+using Envelope = WorkFlowStages.Model.Envelope;
+using Microsoft.EntityFrameworkCore;
 
 namespace WorkFlowStages.Services
 {
     public class DocuSignService
     {
         private readonly IConfiguration _configuration;
+        private readonly Data.AppContext _context;
 
-        public DocuSignService(IConfiguration configuration)
+
+        public DocuSignService(IConfiguration configuration, Data.AppContext context)
         {
             _configuration = configuration;
+            _context = context;
         }
 
-        public string GetAccessToken()
+        private string GetAccessToken()
         {
-            var apiClient = new ApiClient($"https://{_configuration["DocuSign:OAuthBasePath"]}");
+            var privateKeyPath = _configuration["DocuSign:PrivateKeyFile"];
+            var privateKeyBytes = File.ReadAllBytes(privateKeyPath);
 
-            // Read the entire private key file content
-            string privateKeyContent = File.ReadAllText(_configuration["DocuSign:PrivateKeyFile"]);
+            var clientId = _configuration["DocuSign:IntegrationKey"];
+            var userId = _configuration["DocuSign:UserId"];
+            var authServer = _configuration["DocuSign:OAuthBasePath"];
+            var expiresInHours = int.Parse(_configuration["DocuSign:ExpiresInHours"]);
+            var scopes = new List<string> { "signature", "impersonation" };
 
-            // Remove headers, footers, and new lines to get the Base64 content
-            string header = "-----BEGIN RSA PRIVATE KEY-----";
-            string footer = "-----END RSA PRIVATE KEY-----";
-            string base64Content = privateKeyContent.Replace(header, "")
-                                                    .Replace(footer, "")
-                                                    .Replace("\r", "")
-                                                    .Replace("\n", "")
-                                                    .Trim();
+            var docuSignClient = new ApiClient(authServer);
+            OAuth.OAuthToken authToken = docuSignClient.RequestJWTUserToken(clientId, userId, authServer, privateKeyBytes, expiresInHours, scopes);
 
-            byte[] privateKeyBytes;
-            try
+            string accessToken = authToken.access_token;
+            docuSignClient.SetOAuthBasePath(authServer);
+            OAuth.UserInfo userInfo = docuSignClient.GetUserInfo(authToken.access_token);
+
+            var account = userInfo.Accounts.FirstOrDefault();
+            if (account == null)
             {
-                // Convert the cleaned Base64 content to byte array
-                privateKeyBytes = Convert.FromBase64String(base64Content);
-            }
-            catch (FormatException ex)
-            {
-                throw new Exception("Invalid Base-64 string in the private key.", ex);
+                throw new Exception("No DocuSign account found for the user.");
             }
 
-            OAuth.OAuthToken oAuthToken;
-            try
-            {
-                // Request JWT User Token
-                oAuthToken = apiClient.RequestJWTUserToken(
-                    _configuration["DocuSign:IntegrationKey"],
-                    _configuration["DocuSign:UserId"],
-                    "account-d.docusign.com",
-                    privateKeyBytes,
-                    1
-                );
-            }
-            catch (ApiException ex)
-            {
-                throw new Exception("Error while requesting JWT user token.", ex);
-            }
-
-            return oAuthToken.access_token;
+            return accessToken;
         }
 
-        public EnvelopeSummary CreateEnvelope(string signerEmail, string signerName, string documentBase64, string documentName)
+        public async Task<ResponceModel<Envelope>> SaveDocuSignWithSignatureImageAsync()
         {
-            var apiClient = new ApiClient($"https://{_configuration["DocuSign:OAuthBasePath"]}");
+            try
+            {
+                var apiClient = new ApiClient("https://demo.docusign.net/restapi");
+                apiClient.Configuration.DefaultHeader.Add("Authorization", "Bearer " + GetAccessToken());
+
+
+                var envelopeDefinition = new EnvelopeDefinition
+                {
+                    EmailSubject = "Please sign this document",
+                    Documents = new List<Document>
+                         {
+                             new Document
+                             {
+                                 DocumentBase64 = Convert.ToBase64String(await File.ReadAllBytesAsync("C:\\Users\\a\\Downloads\\Test 2.pdf")),
+                                 Name = "Test Document",
+                                 FileExtension = "pdf",
+                                 DocumentId = "1"
+                             }
+                         },
+                    Recipients = new Recipients
+                    {
+                        Signers = new List<Signer>
+                        {
+                                 new Signer
+                                 {
+                                     Email = "nitin.vishvakarma@enablistar.com",
+                                     Name = "Nitin",
+                                     RecipientId = "1",
+                                     Tabs = new Tabs
+                                     {
+                                         SignHereTabs = new List<SignHere>
+                                         {
+                                             new  SignHere
+                                             {
+                                                 DocumentId = "1",
+                                                 PageNumber = "1",
+                                                 XPosition = "445",
+                                                 YPosition = "792",
+                                                 ScaleValue = "0.5"
+                                             }
+                                         }
+                                     }
+                                 }
+                        }
+                    },
+                    Status = "sent"
+                };
+
+                EnvelopesApi envelopesApi = new EnvelopesApi(apiClient);
+                var envelopeSummary = await envelopesApi.CreateEnvelopeAsync(_configuration["DocuSign:AccountId"], envelopeDefinition);
+
+                var envelope = new Envelope
+                {
+                    EnvelopeId = envelopeSummary.EnvelopeId,
+                    Status = envelopeSummary.Status,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.envelopes.Add(envelope);
+                await _context.SaveChangesAsync();
+
+                return new ResponceModel<Envelope>
+                {
+                    Data = envelope,
+                    Message = "Envelope with signature image sent and saved successfully"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ResponceModel<Envelope>
+                {
+                    Data = null,
+                    Message = $"Error: {ex.Message}"
+                };
+            }
+        }
+
+
+        private void AddSignatureImageToPdf(string inputPdfPath, string outputPdfPath, string imagePath, int xPosition, int yPosition)
+        {
+            using (PdfDocument document = PdfReader.Open(inputPdfPath, PdfDocumentOpenMode.Modify))
+            {
+                PdfPage page = document.Pages[0]; // Assuming the signature goes on the first page
+                XGraphics gfx = XGraphics.FromPdfPage(page);
+                XImage image = XImage.FromFile(imagePath);
+
+                gfx.DrawImage(image, xPosition, yPosition);
+                document.Save(outputPdfPath);
+            }
+        }
+
+        public async Task<ResponceModel<List<Envelope>>> GetDocuSignAsync()
+        {
+            try
+            {
+                var envelopes = await _context.envelopes.ToListAsync();
+                return new ResponceModel<List<Envelope>>
+                {
+                    Data = envelopes,
+                    Message = "Envelopes retrieved successfully"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ResponceModel<List<Envelope>>
+                {
+                    Data = null,
+                    Message = $"Error: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<EnvelopeSummary> CreateEnvelopeAsync(string signerEmail, string signerName, string documentName)
+        {
+
+            var apiClient = new ApiClient("https://demo.docusign.net/restapi");
             apiClient.Configuration.DefaultHeader.Add("Authorization", "Bearer " + GetAccessToken());
 
             EnvelopesApi envelopesApi = new EnvelopesApi(apiClient);
@@ -75,40 +182,41 @@ namespace WorkFlowStages.Services
             {
                 EmailSubject = "Please sign this document",
                 Documents = new List<Document>
-                {
-                    new Document
-                    {
-                        DocumentBase64 = documentBase64,
-                        Name = documentName,
-                        FileExtension = "pdf",
-                        DocumentId = "1"
-                    }
-                },
+                   {
+                       new Document
+                       {
+                           DocumentBase64 = Convert.ToBase64String(await File.ReadAllBytesAsync("C:\\Users\\a\\Downloads\\" + documentName)),
+                           Name = documentName,
+                           FileExtension = "pdf",
+                           DocumentId = "1"
+                       }
+                   },
                 Recipients = new Recipients
                 {
                     Signers = new List<Signer>
-                    {
-                        new Signer
-                        {
-                            Email = signerEmail,
-                            Name = signerName,
-                            RecipientId = "1",
-                            RoutingOrder = "1",
-                            Tabs = new Tabs
-                            {
-                                SignHereTabs = new List<SignHere>
-                                {
-                                    new SignHere
-                                    {
-                                        DocumentId = "1",
-                                        PageNumber = "1",
-                                        XPosition = "100",
-                                        YPosition = "150"
-                                    }
-                                }
-                            }
-                        }
-                    }
+                       {
+                           new Signer
+                           {
+                               Email = signerEmail,
+                               Name = signerName,
+                               RecipientId = "1",
+                               RoutingOrder = "1",
+                               Tabs = new Tabs
+                               {
+                                   SignHereTabs = new List<SignHere>
+                                   {
+                                       new SignHere
+                                       {
+                                             DocumentId = "1",
+                                      PageNumber = "1",
+                                      XPosition = "445",
+                                      YPosition = "792",
+                                      ScaleValue = "0.5"
+                                       }
+                                   }
+                               }
+                           }
+                       }
                 },
                 Status = "sent"
             };

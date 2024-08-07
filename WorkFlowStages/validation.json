@@ -1,0 +1,91 @@
+{
+  "form": {
+    "fields": [
+      {
+        "name": "first_name",
+        "type": "text",
+        "label": "First Name",
+        "validations": {
+          "required": {
+            "enabled": true,
+            "value": true,
+            "message": "First Name is required."
+          },
+          "maxLength": {
+            "enabled": true,
+            "value": 20,
+            "message": "Input exceeds maximum length of 20 characters."
+          }
+        }
+      },
+      {
+        "name": "dob",
+        "type": "date",
+        "label": "Date of Birth",
+        "validations": {
+          "required": {
+            "enabled": true,
+            "value": true,
+            "message": "Date of Birth is required."
+          },
+          "dateFormat": {
+            "enabled": true,
+            "value": "dd/MM/yyyy",
+            "message": "Date format must be dd/MM/yyyy."
+          }
+        }
+      },
+      {
+        "name": "email",
+        "type": "email",
+        "label": "Email",
+        "validations": {
+          "required": {
+            "enabled": true,
+            "value": true,
+            "message": "Email is required."
+          },
+          "pattern": {
+            "enabled": true,
+            "value": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+            "message": "Email must be a valid email address."
+          }
+        }
+      },
+      {
+        "name": "age",
+        "type": "number",
+        "label": "Age",
+        "validations": {
+          "required": {
+            "enabled": true,
+            "value": true,
+            "message": "Age is required."
+          },
+          "minValue": {
+            "enabled": true,
+            "value": 18,
+            "message": "Age must be at least 18."
+          }
+        }
+      },
+      {
+        "name": "total_income",
+        "type": "number",
+        "label": "Total Income",
+        "validations": {
+          "required": {
+            "enabled": true,
+            "value": true,
+            "message": "Total Income is required."
+          },
+          "minValue": {
+            "enabled": true,
+            "value": 0,
+            "message": "Total Income must be a positive number."
+          }
+        }
+      }
+    ]
+  }
+}

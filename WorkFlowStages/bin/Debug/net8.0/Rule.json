@@ -1,0 +1,46 @@
+{
+  "rules": [
+    {
+      "name": "LoanEligibilityRule",
+      "conditions": [
+        {
+          "field": "Age",
+          "operator": ">",
+          "value": 22
+        },
+        {
+          "field": "TotalIncome",
+          "operator": ">",
+          "value": 1000000
+        }
+      ]
+    },
+    {
+      "name": "LoanDecisionTable",
+      "conditions": [
+        {
+          "field": "Age",
+          "operator": ">",
+          "value": 22,
+          "combineWithNext": "AND"
+        },
+        {
+          "field": "TotalIncome",
+          "operator": "<",
+          "value": 1000000
+        },
+        {
+          "field": "Age",
+          "operator": "<",
+          "value": 22,
+          "combineWithNext": "OR"
+        },
+        {
+          "field": "TotalIncome",
+          "operator": ">",
+          "value": 2000000
+        }
+      ]
+    }
+  ]
+}

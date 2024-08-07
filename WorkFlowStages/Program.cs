@@ -1,29 +1,49 @@
-using DocuSign.Core.Client;
 using DocuSign.Core.Model;
 using Microsoft.EntityFrameworkCore;
-using WorkFlowStages.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using NRules;
+using NRules.Fluent;
+using NRules.RuleModel;
 using WorkFlowStages.Data;
-using Microsoft.Extensions.Options;
+using WorkFlowStages.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
-builder.Services.AddScoped<WorkFlowService>();
-builder.Services.AddScoped<DocuSignService>();
-
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddControllers().AddNewtonsoftJson();
 
 builder.Services.AddDbContext<WorkFlowStages.Data.AppContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("WebApiDatabase"));
 });
 
+// Register services
+builder.Services.AddSingleton<SchemaValidator>();
+builder.Services.AddScoped<ValidationService>();
+builder.Services.AddScoped<DocuSignService>();
+builder.Services.AddScoped<WorkFlowService>();
+builder.Services.AddScoped<RuleEngineService>();
+
+
+/*builder.Services.AddSingleton<IRuleRepository>(provider =>
+{
+    var repository = new RuleRepository();
+    repository.Load(x => x.From(typeof(FormFieldValidationRule).Assembly));
+    return repository;
+});*/
+
+/*builder.Services.AddSingleton(provider =>
+{
+    var repository = provider.GetRequiredService<IRuleRepository>();
+    return repository.Compile();
+});*/
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -31,7 +51,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
 
 app.MapControllers();
